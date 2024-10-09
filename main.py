@@ -6,8 +6,8 @@ from PicImageSearch.model import GoogleResponse
 import uvicorn
 import tempfile
 
-proxies = 'http://127.0.0.1:7890'
-# proxies = None
+# proxies = 'http://127.0.0.1:7890'
+proxies = None
 base_url = "https://www.google.com"
 
 app = FastAPI()
