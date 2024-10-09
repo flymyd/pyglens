@@ -1,0 +1,5 @@
+uvicorn==0.30.1
+fastapi==0.115.0
+loguru==0.5.3
+python-multipart==0.0.12
+picimagesearch==3.10.13
