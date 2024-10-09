@@ -6,11 +6,11 @@ from PicImageSearch.model import GoogleResponse
 import uvicorn
 import tempfile
 
-proxies = None
+proxies = 'http://127.0.0.1:7890'
+# proxies = None
 base_url = "https://www.google.com"
 
 app = FastAPI()
-
 
 @logger.catch()
 async def search_google_images(image: Optional[UploadFile] = None, pic_url: Optional[str] = None,
@@ -41,7 +41,6 @@ async def search_google_images(image: Optional[UploadFile] = None, pic_url: Opti
 
         return results
 
-
 def parse_response(resp: Optional[GoogleResponse]) -> List[Dict]:
     if not resp or not resp.raw:
         return []
@@ -57,7 +56,6 @@ def parse_response(resp: Optional[GoogleResponse]) -> List[Dict]:
 
     return page_results
 
-
 @app.post("/glens")
 async def glens(image: Optional[UploadFile] = File(None), pic_url: Optional[str] = Form(None)):
     if not image and not pic_url:
@@ -66,9 +64,8 @@ async def glens(image: Optional[UploadFile] = File(None), pic_url: Optional[str]
     if image and not image.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
         raise HTTPException(status_code=400, detail="Invalid file type")
 
-    result = await search_google_images(image, pic_url, proxies)
+    result = await search_google_images(image=image, pic_url=pic_url, proxies=proxies)
     return result
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
