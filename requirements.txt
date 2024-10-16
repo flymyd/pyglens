@@ -3,3 +3,7 @@ fastapi==0.115.0
 loguru==0.5.3
 python-multipart==0.0.12
 picimagesearch==3.10.13
+opencv-python==4.10.0.84
+numpy==2.1.2
+requests==2.32.3
+ultralytics==8.3.13

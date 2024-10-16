@@ -5,21 +5,19 @@ from PicImageSearch import Google, Network
 from PicImageSearch.model import GoogleResponse
 import uvicorn
 import tempfile
-import yolo_crop
-import cv_crop
 
-# proxies = 'http://127.0.0.1:7890'
-proxies = None
+proxies = 'http://127.0.0.1:7890'
+# proxies = None
 base_url = "https://www.google.com"
 
 app = FastAPI()
-
 
 @logger.catch()
 async def search_google_images(image: Optional[UploadFile] = None, pic_url: Optional[str] = None,
                                proxies: Optional[str] = None, max_pages: int = 2) -> Dict:
     async with Network(proxies=proxies) as client:
         google = Google(client=client, base_url=base_url)
+
         if pic_url:
             resp = await google.search(url=pic_url)
         elif image:
@@ -35,7 +33,6 @@ async def search_google_images(image: Optional[UploadFile] = None, pic_url: Opti
 
         results = []
         page_count = 0
-        # print(resp.url)
 
         while resp and page_count < max_pages:
             results.extend(parse_response(resp))
@@ -43,7 +40,6 @@ async def search_google_images(image: Optional[UploadFile] = None, pic_url: Opti
             page_count += 1
 
         return results
-
 
 def parse_response(resp: Optional[GoogleResponse]) -> List[Dict]:
     if not resp or not resp.raw:
@@ -60,41 +56,16 @@ def parse_response(resp: Optional[GoogleResponse]) -> List[Dict]:
 
     return page_results
 
-
 @app.post("/glens")
-# image和pic_url二选一
-# crop_type 0 yolov8 1 opencv
-async def glens(image: Optional[UploadFile] = File(None), pic_url: Optional[str] = Form(None),
-                need_crop: bool = Form(False), crop_type: int = Form(1)):
+async def glens(image: Optional[UploadFile] = File(None), pic_url: Optional[str] = Form(None)):
     if not image and not pic_url:
         raise HTTPException(status_code=400, detail="Either image or pic_url must be provided")
 
     if image and not image.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp')):
         raise HTTPException(status_code=400, detail="Invalid file type")
 
-    if need_crop:
-        if image:
-            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                temp_file.write(await image.read())
-                temp_file_path = temp_file.name
-            if crop_type == 0:
-                cropped_image_path = yolo_crop.yolo_crop(temp_file_path)
-            else:
-                cropped_image_path = cv_crop.cv_crop(temp_file_path)
-            result = await search_google_images(
-                image=UploadFile(filename=cropped_image_path, file=open(cropped_image_path, 'rb')), proxies=proxies)
-        elif pic_url:
-            if crop_type == 0:
-                cropped_image_path = yolo_crop.yolo_crop(pic_url)
-            else:
-                cropped_image_path = cv_crop.cv_crop(pic_url)
-            result = await search_google_images(
-                image=UploadFile(filename=cropped_image_path, file=open(cropped_image_path, 'rb')), proxies=proxies)
-    else:
-        result = await search_google_images(image=image, pic_url=pic_url, proxies=proxies)
-
+    result = await search_google_images(image=image, pic_url=pic_url, proxies=proxies)
     return result
-
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
