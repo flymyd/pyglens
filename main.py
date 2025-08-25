@@ -8,8 +8,6 @@ import tempfile
 import yolo_crop
 import cv_crop
 
-# proxies = 'http://127.0.0.1:7890'
-proxies = None
 base_url = "https://www.google.com"
 
 app = FastAPI()
@@ -17,8 +15,8 @@ app = FastAPI()
 
 @logger.catch()
 async def search_google_images(image: Optional[UploadFile] = None, pic_url: Optional[str] = None,
-                               proxies: Optional[str] = None, max_pages: int = 2) -> Dict:
-    async with Network(proxies=proxies) as client:
+                               max_pages: int = 2) -> Dict:
+    async with Network() as client:
         google = Google(client=client, base_url=base_url)
         if pic_url:
             resp = await google.search(url=pic_url)
@@ -35,9 +33,11 @@ async def search_google_images(image: Optional[UploadFile] = None, pic_url: Opti
 
         results = []
         page_count = 0
+        # print(resp)
         # print(resp.url)
 
         while resp and page_count < max_pages:
+            print(parse_response(resp))
             results.extend(parse_response(resp))
             resp = await google.next_page(resp)
             page_count += 1
@@ -46,6 +46,11 @@ async def search_google_images(image: Optional[UploadFile] = None, pic_url: Opti
 
 
 def parse_response(resp: Optional[GoogleResponse]) -> List[Dict]:
+    # print(resp.origin)
+    # print(resp.url)
+    # print(resp.pages)
+    # print(resp.raw)
+    
     if not resp or not resp.raw:
         return []
 
@@ -82,16 +87,16 @@ async def glens(image: Optional[UploadFile] = File(None), pic_url: Optional[str]
             else:
                 cropped_image_path = cv_crop.cv_crop(temp_file_path)
             result = await search_google_images(
-                image=UploadFile(filename=cropped_image_path, file=open(cropped_image_path, 'rb')), proxies=proxies)
+                image=UploadFile(filename=cropped_image_path, file=open(cropped_image_path, 'rb')))
         elif pic_url:
             if crop_type == 0:
                 cropped_image_path = yolo_crop.yolo_crop(pic_url)
             else:
                 cropped_image_path = cv_crop.cv_crop(pic_url)
             result = await search_google_images(
-                image=UploadFile(filename=cropped_image_path, file=open(cropped_image_path, 'rb')), proxies=proxies)
+                image=UploadFile(filename=cropped_image_path, file=open(cropped_image_path, 'rb')))
     else:
-        result = await search_google_images(image=image, pic_url=pic_url, proxies=proxies)
+        result = await search_google_images(image=image, pic_url=pic_url)
 
     return result
 
